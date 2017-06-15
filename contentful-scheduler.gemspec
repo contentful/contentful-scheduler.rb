@@ -20,7 +20,7 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   spec.add_runtime_dependency "contentful-webhook-listener", "~> 0.2"
-  spec.add_runtime_dependency "contentful-management", "~> 1.0"
+  spec.add_runtime_dependency "contentful-management", "~> 1.8"
   spec.add_runtime_dependency "resque", "~> 1.0"
   spec.add_runtime_dependency "resque-scheduler", "~> 4.0"
   spec.add_runtime_dependency "redis", "~> 3.0"
