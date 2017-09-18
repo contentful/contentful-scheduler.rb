@@ -82,10 +82,22 @@ describe Contentful::Scheduler::Queue do
       )).to eq 'something'
     end
 
-    it '#publish_date' do
-      expect(subject.publish_date(
-        WebhookDouble.new('bar', 'foo', {}, {'my_field' => '2011-04-04T22:00:00+00:00'})
-      )).to eq DateTime.new(2011, 4, 4, 22, 0, 0)
+    describe '#publish_date' do
+      it 'works if date field not localized' do
+        expect(subject.publish_date(
+          WebhookDouble.new('bar', 'foo', {}, {'my_field' => '2011-04-04T22:00:00+00:00'})
+        )).to eq DateTime.new(2011, 4, 4, 22, 0, 0)
+      end
+
+      it 'works if date field localized by grabbing first available locale' do
+        expect(subject.publish_date(
+          WebhookDouble.new('bar', 'foo', {}, {'my_field' => {'en-US': '2011-04-04T22:00:00+00:00'}})
+        )).to eq DateTime.new(2011, 4, 4, 22, 0, 0)
+
+        expect(subject.publish_date(
+          WebhookDouble.new('bar', 'foo', {}, {'my_field' => {'en-CA': '2011-04-04T23:00:00Z'}})
+        )).to eq DateTime.new(2011, 4, 4, 23, 0, 0)
+      end
     end
 
     describe '#already_published?' do
