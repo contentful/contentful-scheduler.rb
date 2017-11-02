@@ -1,4 +1,5 @@
 require_relative "tasks"
+require 'chronic'
 require 'contentful/webhook/listener'
 
 module Contentful
@@ -18,7 +19,7 @@ module Contentful
         return if already_published?(webhook)
 
         success = Resque.enqueue_at(
-          publish_date(webhook).to_time.utc,
+          publish_date(webhook),
           ::Contentful::Scheduler::Tasks::Publish,
           webhook.space_id,
           webhook.id,
@@ -61,11 +62,11 @@ module Contentful
       end
 
       def already_published?(webhook)
-        return true if publish_date(webhook) < DateTime.now
+        return true if publish_date(webhook) < Time.now.utc
         return false unless webhook.sys.key?('publishedAt')
 
         if !webhook.sys['publishedAt'].nil?
-          return DateTime.strptime(webhook.sys['publishedAt']).to_time.utc < DateTime.now.to_time.utc
+          return Chronic.parse(webhook.sys['publishedAt']).utc < Time.now.utc
         end
 
         false
@@ -80,7 +81,7 @@ module Contentful
       def publish_date(webhook)
         date_field = webhook_publish_field(webhook)
         date_field = date_field[date_field.keys[0]] if date_field.is_a? Hash
-        DateTime.strptime(date_field)
+        Chronic.parse(date_field).utc
       end
 
       def spaces

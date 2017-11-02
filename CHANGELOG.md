@@ -1,6 +1,8 @@
 # CHANGELOG
 
 ## Unreleased
+### Fixed
+* Fix time parsing.
 
 ## 0.2.0
 
