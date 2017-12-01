@@ -3,10 +3,7 @@
 Scheduling Server for Contentful entries.
 
 ## Contentful
-[Contentful](http://www.contentful.com) is a content management platform for web applications,
-mobile apps and connected devices. It allows you to create, edit & manage content in the cloud
-and publish it anywhere via powerful API. Contentful offers tools for managing editorial
-teams and enabling cooperation between organizations.
+[Contentful](https://www.contentful.com) provides a content infrastructure for digital teams to power content in websites, apps, and devices. Unlike a CMS, Contentful was built to integrate with the modern software stack. It offers a central hub for structured content, powerful management and delivery APIs, and a customizable web app that enable developers and content creators to ship digital products faster.
 
 ## What does `contentful-scheduler` do?
 The aim of `contentful-scheduler` is to have developers setting up their Contentful
