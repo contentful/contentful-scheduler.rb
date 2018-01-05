@@ -107,10 +107,10 @@ describe Contentful::Scheduler::Queue do
         )).to be_truthy
       end
 
-      it 'true if sys.publishedAt is in past' do
+      it 'false if sys.publishedAt is in past' do
         expect(subject.already_published?(
           WebhookDouble.new('bar', 'foo', {'publishedAt' =>  '2011-04-04T22:00:00+00:00'}, {'my_field' => '2099-04-04T22:00:00+00:00'})
-        )).to be_truthy
+        )).to be_falsey
       end
 
       it 'false if sys.publishedAt is not present' do
