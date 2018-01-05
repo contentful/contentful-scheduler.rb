@@ -63,11 +63,6 @@ module Contentful
 
       def already_published?(webhook)
         return true if publish_date(webhook) < Time.now.utc
-        return false unless webhook.sys.key?('publishedAt')
-
-        if !webhook.sys['publishedAt'].nil?
-          return Chronic.parse(webhook.sys['publishedAt']).utc < Time.now.utc
-        end
 
         false
       end
