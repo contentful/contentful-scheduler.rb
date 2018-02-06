@@ -13,8 +13,7 @@ entries for scheduled publishing.
 `contentful-scheduler` provides a web endpoint to receive webhook calls from Contentful.
 
 Every time the endpoint recieves a call it looks for the value of the field defined in the configuration.
-If the value is a time in the future -- and if the entry has not already been published -- it will schedule
-the entry for publishing at the specified time.
+If the value is a time in the future it will schedule the entry for publishing at the specified time.
 
 A background worker based on the popular `resque` gem will then proceed to actually make the publish call
 against the Content Management API at the due time. For this the Entries you wish to publish require a
