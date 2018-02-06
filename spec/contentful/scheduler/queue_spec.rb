@@ -100,32 +100,6 @@ describe Contentful::Scheduler::Queue do
       end
     end
 
-    describe '#already_published?' do
-      it 'true if webhook publish_date is in past' do
-        expect(subject.already_published?(
-          WebhookDouble.new('bar', 'foo', {}, {'my_field' => '2011-04-04T22:00:00+00:00'})
-        )).to be_truthy
-      end
-
-      it 'true if sys.publishedAt is in past' do
-        expect(subject.already_published?(
-          WebhookDouble.new('bar', 'foo', {'publishedAt' =>  '2011-04-04T22:00:00+00:00'}, {'my_field' => '2099-04-04T22:00:00+00:00'})
-        )).to be_truthy
-      end
-
-      it 'false if sys.publishedAt is not present' do
-        expect(subject.already_published?(
-          WebhookDouble.new('bar', 'foo', {}, {'my_field' => '2099-04-04T22:00:00+00:00'})
-        )).to be_falsey
-      end
-
-      it 'false if sys.publishedAt is present but nil' do
-        expect(subject.already_published?(
-          WebhookDouble.new('bar', 'foo', {'publishedAt' => nil}, {'my_field' => '2099-04-04T22:00:00+00:00'})
-        )).to be_falsey
-      end
-    end
-
     describe '#publishable?' do
       it 'false if webhook space not present in config' do
         expect(subject.publishable?(
@@ -147,7 +121,7 @@ describe Contentful::Scheduler::Queue do
 
       it 'true if publish_field is populated' do
         expect(subject.publishable?(
-          WebhookDouble.new('bar', 'foo', {}, {'my_field' => '2011-04-04T22:00:00+00:00'})
+          WebhookDouble.new('bar', 'foo', {}, {'my_field' => '2111-04-04T22:00:00+00:00'})
         )).to be_truthy
       end
     end
@@ -221,14 +195,6 @@ describe Contentful::Scheduler::Queue do
 
           subject.update_or_create(WebhookDouble.new('bar', 'foo', {}, {'my_field' => '2099-04-04T22:00:00+00:00'}))
         end
-
-        it 'removes old call if already published' do
-          allow(Resque).to receive(:peek) { [{'args' => ['foo', 'bar']}] }
-          expect(Resque).not_to receive(:enqueue_at)
-          expect(subject).to receive(:remove)
-
-          subject.update_or_create(WebhookDouble.new('bar', 'foo', {}, {'my_field' => '2011-04-04T22:00:00+00:00'}))
-        end
       end
     end
 
@@ -250,7 +216,7 @@ describe Contentful::Scheduler::Queue do
         allow(Resque).to receive(:peek) { [{'args' => ['foo', 'bar']}] }
         expect(Resque).to receive(:remove_delayed)
 
-        subject.remove(WebhookDouble.new('bar', 'foo', {}, {'my_field' => '2011-04-04T22:00:00+00:00'}))
+        subject.remove(WebhookDouble.new('bar', 'foo', {}, {'my_field' => '2111-04-04T22:00:00+00:00'}))
       end
     end
   end

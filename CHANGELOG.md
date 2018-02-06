@@ -1,6 +1,8 @@
 # CHANGELOG
 
 ## Unreleased
+### Added
+* Added possibility to republish already published content. [#5](https://github.com/contentful/contentful-scheduler.rb/issues/5)
 
 ## 0.2.1
 
