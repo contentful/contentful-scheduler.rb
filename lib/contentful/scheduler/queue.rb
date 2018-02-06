@@ -16,7 +16,7 @@ module Contentful
       def update_or_create(webhook)
         return unless publishable?(webhook)
         remove(webhook) if in_queue?(webhook)
-        return if already_published?(webhook)
+        return unless publish_is_future?(webhook)
 
         success = Resque.enqueue_at(
           publish_date(webhook),
@@ -55,21 +55,14 @@ module Contentful
         return false unless spaces.key?(webhook.space_id)
 
         if webhook_publish_field?(webhook)
-          return !webhook_publish_field(webhook).nil?
+          return !webhook_publish_field(webhook).nil? && publish_is_future?(webhook)
         end
 
         false
       end
 
-      def already_published?(webhook)
-        return true if publish_date(webhook) < Time.now.utc
-        return false unless webhook.sys.key?('publishedAt')
-
-        if !webhook.sys['publishedAt'].nil?
-          return Chronic.parse(webhook.sys['publishedAt']).utc < Time.now.utc
-        end
-
-        false
+      def publish_is_future?(webhook)
+        publish_date(webhook) > Time.now.utc
       end
 
       def in_queue?(webhook)
