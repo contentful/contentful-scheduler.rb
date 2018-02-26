@@ -1,6 +1,8 @@
 # CHANGELOG
 
 ## Unreleased
+
+## 0.4.0
 ### Fixed
 * Fixed User Agent Header to comply with specification.
 
