@@ -1,6 +1,8 @@
 # CHANGELOG
 
 ## Unreleased
+### Fixed
+* Fixed User Agent Header to comply with specification.
 
 ## 0.3.0
 ### Added
@@ -9,7 +11,7 @@
 ## 0.2.1
 
 ### Fixed
-* Fix time parsing.
+* Fixed time parsing.
 
 ## 0.2.0
 
