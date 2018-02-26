@@ -10,7 +10,7 @@ module Contentful
           client = ::Contentful::Management::Client.new(
             token,
             raise_errors: true,
-            application_name: 'contentful-scheduler',
+            application_name: 'contentful.scheduler',
             application_version: Contentful::Scheduler::VERSION
           )
           client.entries.find(space_id, entry_id).publish

@@ -29,7 +29,7 @@ describe Contentful::Scheduler::Tasks::Publish do
       expect(::Contentful::Management::Client).to receive(:new).with(
         'foobar',
         raise_errors: true,
-        application_name: 'contentful-scheduler',
+        application_name: 'contentful.scheduler',
         application_version: Contentful::Scheduler::VERSION
       ) { mock_client }
       expect(mock_client).to receive(:entries) { mock_entries }
