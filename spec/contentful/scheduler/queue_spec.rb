@@ -1,67 +1,27 @@
 require 'spec_helper'
 
-class WebhookDouble
-  attr_reader :id, :space_id, :sys, :fields
-  def initialize(id, space_id, sys = {}, fields = {})
-    @id = id
-    @space_id = space_id
-    @sys = sys
-    @fields = fields
-  end
-end
-
 describe Contentful::Scheduler::Queue do
-  let(:config) {
-    {
-      logger: ::Contentful::Scheduler::DEFAULT_LOGGER,
-      endpoint: ::Contentful::Scheduler::DEFAULT_ENDPOINT,
-      port: ::Contentful::Scheduler::DEFAULT_PORT,
-      redis: {
-        host: 'localhost',
-        port: 12341,
-        password: 'foobar'
-      },
-      spaces: {
-        'foo' => {
-          publish_field: 'my_field',
-          management_token: 'foo'
-        }
-      }
-    }
-  }
-
+  let(:config) { base_config }
   subject { described_class.instance }
 
   before :each do
     allow(Resque).to receive(:redis=)
     described_class.class_variable_set(:@@instance, nil)
-    ::Contentful::Scheduler.config = config
+
+    ::Contentful::Scheduler.class_variable_set(:@@config, base_config)
   end
 
   describe 'singleton' do
     it 'creates an instance if not initialized' do
-      queue = described_class.instance
-      expect(queue).to be_a described_class
+      expect(subject).to be_a described_class
     end
 
     it 'reuses same instance' do
-      queue = described_class.instance
-
-      expect(queue).to eq described_class.instance
-    end
-  end
-
-  describe 'attributes' do
-    it '.config' do
-      expect(subject.config).to eq config
+      expect(subject).to eq described_class.instance
     end
   end
 
   describe 'instance methods' do
-    it '#spaces' do
-      expect(subject.spaces).to eq config[:spaces]
-    end
-
     it '#webhook_publish_field?' do
       expect(subject.webhook_publish_field?(
         WebhookDouble.new('bar', 'foo', {}, {'my_field' => 'something'})
