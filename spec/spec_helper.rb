@@ -40,6 +40,17 @@ class RequestDummy
   end
 end
 
+class WebhookDouble
+  attr_reader :id, :space_id, :sys, :fields, :raw_headers
+  def initialize(id, space_id, sys = {}, fields = {}, headers = {})
+    @id = id
+    @space_id = space_id
+    @sys = sys
+    @fields = fields
+    @raw_headers = headers
+  end
+end
+
 class Contentful::Webhook::Listener::Controllers::Wait
   @@sleeping = false
 
@@ -52,6 +63,53 @@ class Contentful::Webhook::Listener::Controllers::Wait
     @@sleeping = false
     value
   end
+end
+
+def base_config
+  {
+    logger: ::Contentful::Scheduler::DEFAULT_LOGGER,
+    endpoint: ::Contentful::Scheduler::DEFAULT_ENDPOINT,
+    port: ::Contentful::Scheduler::DEFAULT_PORT,
+    redis: {
+      host: 'localhost',
+      port: 12341,
+      password: 'foobar'
+    },
+    spaces: {
+      'foo' => {
+        publish_field: 'my_field',
+        management_token: 'foo'
+      },
+      'no_auth' => {
+        publish_field: 'my_field',
+        management_token: 'foo'
+      },
+      'valid_token_array' => {
+        publish_field: 'my_field',
+        management_token: 'foo',
+        auth: {
+          key: 'auth',
+          valid_tokens: ['test_1']
+        }
+      },
+      'valid_token_string' => {
+        publish_field: 'my_field',
+        management_token: 'foo',
+        auth: {
+          key: 'auth',
+          valid_tokens: 'test_2'
+        }
+      },
+      'lambda_auth' => {
+        publish_field: 'my_field',
+        management_token: 'foo',
+        auth: {
+          key: 'auth',
+          validation: -> (value) { value.size == 4 }
+        }
+      }
+    }
+  }
 end
 
 RSpec.configure do |config|

@@ -9,6 +9,10 @@ describe Contentful::Scheduler::Controller do
   let(:queue) { ::Contentful::Scheduler::Queue.instance }
   subject { described_class.new server, logger, timeout }
 
+  before :each do
+    Contentful::Scheduler.config = base_config
+  end
+
   describe 'events' do
     [:create, :save, :auto_save, :unarchive].each do |event|
       it "creates or updates webhook metadata in publish queue on #{event}" do
@@ -37,6 +41,20 @@ describe Contentful::Scheduler::Controller do
           expect(queue).not_to receive(:update_or_create)
 
           headers['X-Contentful-Topic'] = "ContentfulManagement.#{kind}.#{event}"
+          request = RequestDummy.new(headers, body)
+          subject.respond(request, MockResponse.new).join
+        end
+      end
+    end
+
+    describe 'auth' do
+      context 'on auth failure' do
+        let(:body) { {sys: { id: 'invalid_auth', space: { sys: { id: 'valid_token_string' } } }, fields: {} } }
+
+        it 'will stop the queueing process' do
+          expect(queue).not_to receive(:update_or_create)
+
+          headers['X-Contentful-Topic'] = "ContentfulManagement.Entry.save"
           request = RequestDummy.new(headers, body)
           subject.respond(request, MockResponse.new).join
         end

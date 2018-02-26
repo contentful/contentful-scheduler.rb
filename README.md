@@ -91,7 +91,10 @@ config = {
   spaces: {
     'YOUR_SPACE_ID' => {
       publish_field: 'publishDate', # It specifies the field ID for your Publish Date in your Content Type
-      management_token: 'YOUR_TOKEN'
+      management_token: 'YOUR_TOKEN',
+      auth: { # This is optional
+        # ... content in this section will be explained in a separate section ...
+      }
     }
   },
 }
@@ -151,6 +154,96 @@ $ foreman start
 Under the space settings menu choose webhook and add a new webhook pointing to `http://YOUR_SERVER:32123/scheduler`.
 
 Keep in mind that if you modify the defaults, the URL should be changed to the values specified in the configuration.
+
+## Authentication
+
+You may want to provide an additional layer of security to your scheduler server, therefore an additional option to add space based authentication is provided.
+
+There are two available authentication methods. Static string matching and lambda validations, which will be explained in the next section.
+
+Any of both mechanisms require you to add additional headers to your webhook set up, which can be done through the [Contentful Web App](https://app.contentful.com),
+or through the [CMA](https://www.contentful.com/developers/docs/references/content-management-api/#/reference/webhooks/webhook/create-update-a-webhook/console/ruby).
+
+### Authentication via static token matching
+
+The simplest authentication mechanism, is to provide a static set of valid strings that are considered valid when found in a determined header.
+
+For example:
+
+```ruby
+config = {
+  # ... the rest of the config ...
+  spaces: {
+    'my_space' => {
+      # ... the rest of the space specific configuration ...
+      auth: {
+        key: 'X-Webhook-Server-Auth-Header',
+        valid_tokens: ['some_valid_static_token']
+      }
+    }
+  }
+}
+```
+
+The above example, whenever your webhook sends the `X-Webhook-Server-Auth-Header` with a value of `some_valid_static_token`,
+it will accept the request and queue your webhook for processing.
+
+You can provide multiple or a single token. If a single token is provided, it's not necessary to include it in an array.
+
+### Authentication via lambda
+
+A more complicated solution, but far more secure, is the ability to execute a lambda as the validator function.
+This allows you define a function for authentication. This function can call an external authentication service,
+make checks against a database or do internal processing.
+
+The function must return a truthy/falsey value in order for the authentication to be successful/unsuccessful.
+
+For example, we validate that the token provided is either `foo` or `bar`:
+
+```ruby
+config = {
+  # ... the rest of the config ...
+  spaces: {
+    'my_space' => {
+      # ... the rest of the space specific configuration ...
+      auth: {
+        key: 'X-Webhook-Server-Auth-Header',
+        validation: -> (value) { /^(foo|bar)$/ =~ value }
+      }
+    }
+  }
+}
+```
+
+Or a more complicated example, checking if the header is a valid OAuth token, and then making a request to our OAuth database.
+For this example we'll consider you have a table called `tokens` and are using [DataMapper](https://datamapper.org) as a ORM,
+and have a `valid?` method checking if the token is not expired.
+
+```ruby
+config = {
+  # ... the rest of the config ...
+  spaces: {
+    'my_space' => {
+      # ... the rest of the space specific configuration ...
+      auth: {
+        key: 'X-Webhook-Server-Auth-Header',
+        validation: proc do |value|
+          return false unless /^Bearer \w+/ =~ value
+
+          token = Token.first(token: value.gsub('Bearer ', ''))
+
+          return false if token.nil?
+
+          token.valid?
+        end
+      }
+    }
+  }
+}
+```
+
+If you have multiple spaces and all share the same auth strategy, you can extract the authentication method to a variable,
+and assign it to all the applicable spaces in order to reduce the code duplication.
 
 ## Running in Heroku
 

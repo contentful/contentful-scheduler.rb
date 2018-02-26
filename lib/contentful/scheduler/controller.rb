@@ -1,4 +1,5 @@
 require 'contentful/webhook/listener'
+require_relative 'auth'
 require_relative 'queue'
 
 module Contentful
@@ -6,6 +7,11 @@ module Contentful
     class Controller < ::Contentful::Webhook::Listener::Controllers::WebhookAware
       def create
         return unless webhook.entry?
+
+        if !Auth.new(webhook).auth
+          logger.warn "Skipping - Authentication failed for Space: #{webhook.space_id} - Entry: #{webhook.id}"
+          return
+        end
 
         logger.info "Queueing - Space: #{webhook.space_id} - Entry: #{webhook.id}"
 
@@ -17,6 +23,11 @@ module Contentful
 
       def delete
         return unless webhook.entry?
+
+        if !Auth.new(webhook).auth
+          logger.warn "Skipping - Authentication failed for Space: #{webhook.space_id} - Entry: #{webhook.id}"
+          return
+        end
 
         logger.info "Unqueueing - Space: #{webhook.space_id} - Entry: #{webhook.id}"
 

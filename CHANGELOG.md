@@ -4,6 +4,9 @@
 ### Fixed
 * Fixed User Agent Header to comply with specification.
 
+### Added
+* Added authentication mechanisms. [#9](https://github.com/contentful/contentful-scheduler.rb/issues/9)
+
 ## 0.3.0
 ### Added
 * Added possibility to republish already published content. [#5](https://github.com/contentful/contentful-scheduler.rb/issues/5)

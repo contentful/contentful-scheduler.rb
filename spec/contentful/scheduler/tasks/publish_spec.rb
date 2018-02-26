@@ -21,13 +21,13 @@ describe Contentful::Scheduler::Tasks::Publish do
   let(:mock_entry) { MockEntry.new }
 
   before :each do
-    ::Contentful::Scheduler.class_variable_set(:@@config, {management_token: 'foobar'})
+    ::Contentful::Scheduler.config = base_config
   end
 
   describe 'class methods' do
     it '::perform' do
       expect(::Contentful::Management::Client).to receive(:new).with(
-        'foobar',
+        'foo',
         raise_errors: true,
         application_name: 'contentful.scheduler',
         application_version: Contentful::Scheduler::VERSION
@@ -36,7 +36,7 @@ describe Contentful::Scheduler::Tasks::Publish do
       expect(mock_entries).to receive(:find).with('foo', 'bar') { mock_entry }
       expect(mock_entry).to receive(:publish)
 
-      described_class.perform('foo', 'bar', ::Contentful::Scheduler.config[:management_token])
+      described_class.perform('foo', 'bar', ::Contentful::Scheduler.config[:spaces]['foo'][:management_token])
     end
   end
 end
