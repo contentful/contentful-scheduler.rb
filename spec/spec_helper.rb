@@ -80,6 +80,11 @@ def base_config
         publish_field: 'my_field',
         management_token: 'foo'
       },
+      'unpublish_space' => {
+        publish_field: 'my_field',
+        unpublish_field: 'unpublish_field',
+        management_token: 'foo'
+      },
       'no_auth' => {
         publish_field: 'my_field',
         management_token: 'foo'
