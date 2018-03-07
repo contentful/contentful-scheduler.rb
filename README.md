@@ -7,18 +7,18 @@ Scheduling Server for Contentful entries.
 
 ## What does `contentful-scheduler` do?
 The aim of `contentful-scheduler` is to have developers setting up their Contentful
-entries for scheduled publishing.
+entries for scheduled publishing and unpublishing.
 
 ## How does it work
 `contentful-scheduler` provides a web endpoint to receive webhook calls from Contentful.
 
 Every time the endpoint recieves a call it looks for the value of the field defined in the configuration.
-If the value is a time in the future it will schedule the entry for publishing at the specified time.
+If the value is a time in the future it will schedule the entry for publishing or unpublishing at the specified time.
 
 A background worker based on the popular `resque` gem will then proceed to actually make the publish call
-against the Content Management API at the due time. For this the Entries you wish to publish require a
-customizable Date field, which we advice to call `publishDate`, this field can be configured inside your
-`Rakefile` and is specific per-space.
+against the Content Management API at the due time. For this the Entries you wish to publish or unpublish require a
+customizable Date field, which we advice to call `publishDate` for the publishing action and `unpublishDate` for the unpublishing action,
+this field can be configured inside your `Rakefile` and is specific per-space.
 
 You can add multiple spaces to your configuration, making it useful if you have a milti-space setup.
 
@@ -91,6 +91,7 @@ config = {
   spaces: {
     'YOUR_SPACE_ID' => {
       publish_field: 'publishDate', # It specifies the field ID for your Publish Date in your Content Type
+      unpublish_field: 'unpublishDate', # Optional - It specifies the field ID for your Unpublish Date in your Content Type
       management_token: 'YOUR_TOKEN',
       auth: { # This is optional
         # ... content in this section will be explained in a separate section ...

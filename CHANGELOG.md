@@ -1,6 +1,8 @@
 # CHANGELOG
 
 ## Unreleased
+### Added
+* Added support for scheduled unpublishing. [#10](https://github.com/contentful/contentful-scheduler.rb/issues/10)
 
 ## 0.4.0
 ### Fixed

@@ -36,9 +36,29 @@ describe Contentful::Scheduler::Queue do
       )).to be_falsey
     end
 
+    it '#webhook_unpublish_field?' do
+      expect(subject.webhook_unpublish_field?(
+        WebhookDouble.new('bar', 'unpublish_space', {}, {'unpublish_field' => 'something'})
+      )).to be_truthy
+
+      expect(subject.webhook_publish_field?(
+        WebhookDouble.new('bar', 'unpublish_space', {}, {'not_unpublish_field' => 'something'})
+      )).to be_falsey
+
+      expect(subject.webhook_publish_field?(
+        WebhookDouble.new('bar', 'other_space', {}, {'not_my_field' => 'something'})
+      )).to be_falsey
+    end
+
     it '#webhook_publish_field' do
       expect(subject.webhook_publish_field(
         WebhookDouble.new('bar', 'foo', {}, {'my_field' => 'something'})
+      )).to eq 'something'
+    end
+
+    it '#webhook_unpublish_field' do
+      expect(subject.webhook_unpublish_field(
+        WebhookDouble.new('bar', 'unpublish_space', {}, {'unpublish_field' => 'something'})
       )).to eq 'something'
     end
 
@@ -56,6 +76,24 @@ describe Contentful::Scheduler::Queue do
 
         expect(subject.publish_date(
           WebhookDouble.new('bar', 'foo', {}, {'my_field' => {'en-CA': '2011-04-04T23:00:00Z'}})
+        )).to eq DateTime.new(2011, 4, 4, 23, 0, 0).to_time.utc
+      end
+    end
+
+    describe '#unpublish_date' do
+      it 'works if date field not localized' do
+        expect(subject.unpublish_date(
+          WebhookDouble.new('bar', 'unpublish_space', {}, {'unpublish_field' => '2011-04-04T22:00:00+00:00'})
+        )).to eq DateTime.new(2011, 4, 4, 22, 0, 0).to_time.utc
+      end
+
+      it 'works if date field localized by grabbing first available locale' do
+        expect(subject.unpublish_date(
+          WebhookDouble.new('bar', 'unpublish_space', {}, {'unpublish_field' => {'en-US': '2011-04-04T22:00:00+00:00'}})
+        )).to eq DateTime.new(2011, 4, 4, 22, 0, 0).to_time.utc
+
+        expect(subject.unpublish_date(
+          WebhookDouble.new('bar', 'unpublish_space', {}, {'unpublish_field' => {'en-CA': '2011-04-04T23:00:00Z'}})
         )).to eq DateTime.new(2011, 4, 4, 23, 0, 0).to_time.utc
       end
     end
@@ -86,18 +124,60 @@ describe Contentful::Scheduler::Queue do
       end
     end
 
-    describe '#in_queue?' do
+    describe '#unpublishable?' do
+      it 'false if webhook space not present in config' do
+        expect(subject.unpublishable?(
+          WebhookDouble.new('bar', 'not_foo')
+        )).to be_falsey
+      end
+
+      it 'false if unpublish_field is not found' do
+        expect(subject.unpublishable?(
+          WebhookDouble.new('bar', 'unpublish_space')
+        )).to be_falsey
+      end
+
+      it 'false if unpublish_field is nil' do
+        expect(subject.unpublishable?(
+          WebhookDouble.new('bar', 'unpublish_space', {}, {'unpublish_field' => nil})
+        )).to be_falsey
+      end
+
+      it 'true if unpublish_field is populated' do
+        expect(subject.unpublishable?(
+          WebhookDouble.new('bar', 'unpublish_space', {}, {'unpublish_field' => '2111-04-04T22:00:00+00:00'})
+        )).to be_truthy
+      end
+    end
+
+    describe '#in_publish_queue?' do
       it 'false if not in queue' do
         allow(Resque).to receive(:peek) { [] }
-        expect(subject.in_queue?(
+        expect(subject.in_publish_queue?(
           WebhookDouble.new('bar', 'foo')
         )).to be_falsey
       end
 
       it 'true if in queue' do
         allow(Resque).to receive(:peek) { [{'args' => ['foo', 'bar']}] }
-        expect(subject.in_queue?(
+        expect(subject.in_publish_queue?(
           WebhookDouble.new('bar', 'foo')
+        )).to be_truthy
+      end
+    end
+
+    describe '#in_unpublish_queue?' do
+      it 'false if not in queue' do
+        allow(Resque).to receive(:peek) { [] }
+        expect(subject.in_unpublish_queue?(
+          WebhookDouble.new('bar', 'foo')
+        )).to be_falsey
+      end
+
+      it 'true if in queue' do
+        allow(Resque).to receive(:peek) { [{'args' => ['unpublish_space', 'bar']}] }
+        expect(subject.in_unpublish_queue?(
+          WebhookDouble.new('bar', 'unpublish_space')
         )).to be_truthy
       end
     end
@@ -151,7 +231,7 @@ describe Contentful::Scheduler::Queue do
             'bar',
             'foo'
           ) { true }
-          expect(subject).to receive(:remove)
+          expect(subject).to receive(:remove_publish)
 
           subject.update_or_create(WebhookDouble.new('bar', 'foo', {}, {'my_field' => '2099-04-04T22:00:00+00:00'}))
         end

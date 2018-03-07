@@ -1,6 +1,6 @@
-require_relative "tasks"
 require 'chronic'
 require 'contentful/webhook/listener'
+require_relative "tasks"
 
 module Contentful
   module Scheduler
@@ -14,28 +14,51 @@ module Contentful
       end
 
       def update_or_create(webhook)
-        return unless publishable?(webhook)
-        remove(webhook) if in_queue?(webhook)
-        return unless publish_is_future?(webhook)
+        if publishable?(webhook)
+          success = update_or_create_for_publish(webhook)
+          log_event_success(webhook, success, 'publish', 'added to')
+        end
 
-        success = Resque.enqueue_at(
+        if unpublishable?(webhook)
+          success = update_or_create_for_unpublish(webhook) && success
+          log_event_success(webhook, success, 'unpublish', 'added to')
+        end
+      end
+
+      def update_or_create_for_publish(webhook)
+        remove_publish(webhook) if in_publish_queue?(webhook)
+        return false unless publish_is_future?(webhook)
+
+        return Resque.enqueue_at(
           publish_date(webhook),
           ::Contentful::Scheduler::Tasks::Publish,
           webhook.space_id,
           webhook.id,
           ::Contentful::Scheduler.config[:spaces][webhook.space_id][:management_token]
         )
+      end
 
-        if success
-          logger.info "Webhook {id: #{webhook.id}, space_id: #{webhook.space_id}} successfully added to queue"
-        else
-          logger.warn "Webhook {id: #{webhook.id}, space_id: #{webhook.space_id}} couldn't be added to queue"
-        end
+      def update_or_create_for_unpublish(webhook)
+        remove_unpublish(webhook) if in_unpublish_queue?(webhook)
+        return false unless unpublish_is_future?(webhook)
+
+        return Resque.enqueue_at(
+          unpublish_date(webhook),
+          ::Contentful::Scheduler::Tasks::Unpublish,
+          webhook.space_id,
+          webhook.id,
+          ::Contentful::Scheduler.config[:spaces][webhook.space_id][:management_token]
+        )
       end
 
       def remove(webhook)
+        remove_publish(webhook)
+        remove_unpublish(webhook)
+      end
+
+      def remove_publish(webhook)
         return unless publishable?(webhook)
-        return unless in_queue?(webhook)
+        return unless in_publish_queue?(webhook)
 
         success = Resque.remove_delayed(
           ::Contentful::Scheduler::Tasks::Publish,
@@ -44,10 +67,28 @@ module Contentful
           ::Contentful::Scheduler.config[:management_token]
         )
 
+        log_event_success(webhook, success, 'publish', 'removed from')
+      end
+
+      def remove_unpublish(webhook)
+        return unless unpublishable?(webhook)
+        return unless in_unpublish_queue?(webhook)
+
+        success = Resque.remove_delayed(
+          ::Contentful::Scheduler::Tasks::Unpublish,
+          webhook.space_id,
+          webhook.id,
+          ::Contentful::Scheduler.config[:management_token]
+        )
+
+        log_event_success(webhook, success, 'unpublish', 'removed from')
+      end
+
+      def log_event_success(webhook, success, event_kind, action)
         if success
-          logger.info "Webhook {id: #{webhook.id}, space_id: #{webhook.space_id}} successfully removed from queue"
+          logger.info "Webhook {id: #{webhook.id}, space_id: #{webhook.space_id}} successfully #{action} the #{event_kind} queue"
         else
-          logger.warn "Webhook {id: #{webhook.id}, space_id: #{webhook.space_id}} couldn't be removed from queue"
+          logger.warn "Webhook {id: #{webhook.id}, space_id: #{webhook.space_id}} couldn't be #{action} the #{event_kind} queue"
         end
       end
 
@@ -61,18 +102,44 @@ module Contentful
         false
       end
 
+      def unpublishable?(webhook)
+        return false unless spaces.key?(webhook.space_id)
+
+        if webhook_unpublish_field?(webhook)
+          return !webhook_unpublish_field(webhook).nil? && unpublish_is_future?(webhook)
+        end
+
+        false
+      end
+
       def publish_is_future?(webhook)
         publish_date(webhook) > Time.now.utc
       end
 
-      def in_queue?(webhook)
+      def unpublish_is_future?(webhook)
+        unpublish_date(webhook) > Time.now.utc
+      end
+
+      def in_publish_queue?(webhook)
         Resque.peek(::Contentful::Scheduler::Tasks::Publish, 0, -1).any? do |job|
+          job['args'][0] == webhook.space_id && job['args'][1] == webhook.id
+        end
+      end
+
+      def in_unpublish_queue?(webhook)
+        Resque.peek(::Contentful::Scheduler::Tasks::Unpublish, 0, -1).any? do |job|
           job['args'][0] == webhook.space_id && job['args'][1] == webhook.id
         end
       end
 
       def publish_date(webhook)
         date_field = webhook_publish_field(webhook)
+        date_field = date_field[date_field.keys[0]] if date_field.is_a? Hash
+        Chronic.parse(date_field).utc
+      end
+
+      def unpublish_date(webhook)
+        date_field = webhook_unpublish_field(webhook)
         date_field = date_field[date_field.keys[0]] if date_field.is_a? Hash
         Chronic.parse(date_field).utc
       end
@@ -85,8 +152,16 @@ module Contentful
         webhook.fields.key?(spaces.fetch(webhook.space_id, {})[:publish_field])
       end
 
+      def webhook_unpublish_field?(webhook)
+        webhook.fields.key?(spaces.fetch(webhook.space_id, {})[:unpublish_field])
+      end
+
       def webhook_publish_field(webhook)
         webhook.fields[spaces[webhook.space_id][:publish_field]]
+      end
+
+      def webhook_unpublish_field(webhook)
+        webhook.fields[spaces[webhook.space_id][:unpublish_field]]
       end
 
       private
