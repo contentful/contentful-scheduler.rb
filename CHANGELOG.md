@@ -1,6 +1,8 @@
 # CHANGELOG
 
 ## Unreleased
+### Changed
+* If publish actions fail to enqueue, subsequent attempts to enqueue an unpublish action won't be logged as a failure. [#15](https://github.com/contentful/contentful-scheduler.rb/issues/15)
 
 ## 0.5.0
 ### Added

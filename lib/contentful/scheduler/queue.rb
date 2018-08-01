@@ -20,7 +20,7 @@ module Contentful
         end
 
         if unpublishable?(webhook)
-          success = update_or_create_for_unpublish(webhook) && success
+          success = update_or_create_for_unpublish(webhook)
           log_event_success(webhook, success, 'unpublish', 'added to')
         end
       end
@@ -149,11 +149,11 @@ module Contentful
       end
 
       def webhook_publish_field?(webhook)
-        webhook.fields.key?(spaces.fetch(webhook.space_id, {})[:publish_field])
+        webhook.fields.key?(spaces.fetch(webhook.space_id, {})[:publish_field]) if webhook.respond_to?(:fields)
       end
 
       def webhook_unpublish_field?(webhook)
-        webhook.fields.key?(spaces.fetch(webhook.space_id, {})[:unpublish_field])
+        webhook.fields.key?(spaces.fetch(webhook.space_id, {})[:unpublish_field]) if webhook.respond_to?(:fields)
       end
 
       def webhook_publish_field(webhook)
