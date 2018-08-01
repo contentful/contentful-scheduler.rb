@@ -1,6 +1,8 @@
 # CHANGELOG
 
 ## Unreleased
+### Changed
+* Removed unneeded success condition for unpublishing. [#15](https://github.com/contentful/contentful-scheduler.rb/issues/15)
 
 ## 0.5.0
 ### Added
