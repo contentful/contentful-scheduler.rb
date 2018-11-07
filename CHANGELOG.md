@@ -1,6 +1,8 @@
 # CHANGELOG
 
 ## Unreleased
+
+## 0.6.0
 ### Changed
 * Updated Redis dependency to allow newer versions. [#17](https://github.com/contentful/contentful-scheduler.rb/issues/17)
 
