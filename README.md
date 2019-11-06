@@ -1,5 +1,7 @@
 # Contentful Scheduler
 
+> This gem has been superseded by a product feature. You can read more here: https://www.contentful.com/blog/2019/10/22/content-operations-easier-scheduled-publishing-comments-tasks/
+
 Scheduling Server for Contentful entries.
 
 ## Contentful
